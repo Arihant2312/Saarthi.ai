@@ -10,8 +10,11 @@
 	"configFiles": {
 		"Cursor Rule": "./.cursor/rules/typescript-utility-functions.mdc"
 	},
+
+
 	"paths": {
 		"*": "./src/blocks",
 		"ts": "./src/ts"
 	}
+	
 }

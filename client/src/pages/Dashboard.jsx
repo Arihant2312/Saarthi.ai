@@ -16,7 +16,7 @@ function Dashboard() {
   },[])
   return (
     <div className='h-full overflow-y-scroll p-6 '>
-      <div className="flex justify-start gap-4 flex-wrap">
+      <div className="flex justify-start gap-4 flex-wrap ">
 
         {/* active paln cretion card */}
         <div className='flex justify-between items-center w-72 p-4 bg-white rounded-xl border border-gray-200'>

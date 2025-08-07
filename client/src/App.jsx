@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Home from './pages/Home'
 
@@ -13,10 +13,21 @@ import RemoveBackground from './pages/RemoveBackground'
 import Community from './pages/Community'
 import MusicRecommend from './pages/MusicRecommend'
 import Summarisetext from './pages/Summarisetext'
+import { useAuth } from '@clerk/clerk-react'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
+//testing apis
+   const {getToken}=useAuth()
+  useEffect(()=>{
+    getToken().then((token)=>(
+       console.log('User token:', token)));
+
+    
+   },[])
   return (
     <div>
+      <Toaster/>
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/ai' element={<Layout />}>
@@ -41,4 +52,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
