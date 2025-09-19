@@ -32,17 +32,22 @@ Generate 4-5 trending and popular "${input}" songs in the "${selstyle}" category
 Each song must follow this exact format:
 
 1. 
-  - Song Title:
-  - Artist Name: 
-  - Key Details: 
+  - Song Title: ...
+  - Artist Name: ...
+  - Key Details: ...
   
 
 2. 
-  - Song Title:
-  - Artist Name:
-  - Key Details:
+    - Song Title: ...
+  - Artist Name: ...
+  - Key Details: ...
  
 
+Make sure:
+- All details are under the number (nested)
+- Each detail on its own line
+Higlight the song title and artist name using bold markdown syntax.
+- Clean formatting without extra symbols or messy layout
 `;
 
 
