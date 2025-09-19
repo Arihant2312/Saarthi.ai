@@ -18,13 +18,7 @@ import { Toaster } from 'react-hot-toast'
 
 function App() {
 //testing apis
-   const {getToken}=useAuth()
-  useEffect(()=>{
-    getToken().then((token)=>(
-       console.log('User token:', token)));
-
-    
-   },[])
+ 
   return (
     <div>
       <Toaster/>
