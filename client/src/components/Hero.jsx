@@ -1,8 +1,8 @@
-import React, { use } from 'react'
+import React from 'react'
 //import { Navigate } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { assets } from '../assets/assets'
-import TextType from './ui/Texttype'
+
 import RotatingText from '../blocks/TextAnimations/RotatingText/RotatingText'
 
 
