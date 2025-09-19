@@ -465,7 +465,7 @@ export const musicgeneration = async (req, res) => {
     // ✅ FIX: clean SQL insert
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)
-      VALUES (${userId}, ${prompt}, ${content}, 'music-generation')
+      VALUES (${userId},'music....', ${content}, 'music-generation')
     `;
 
     res.json({
