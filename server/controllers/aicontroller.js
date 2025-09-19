@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import fs from 'fs';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
-
+//import cloudinary from '../configs/cloudinary.js';
 
 
 
@@ -165,7 +165,7 @@ const { secure_url } = await cloudinary.uploader.upload(baseimage);
 
     res.json({
       success: true,
-      message: "Article created successfully",
+      message: "Image generated successfully",
       content:secure_url,
     });
   } catch (error) {
@@ -174,115 +174,101 @@ const { secure_url } = await cloudinary.uploader.upload(baseimage);
   }
 };
 //image backgrouund remove
-export const removeimagebackground= async (req, res) => {
-  
+export const removeimagebackground = async (req, res) => {
   try {
-    
-    const {userId } =await req.auth(); // ✅ Corrected here
-    const { image } = req.file;
-   // const plan=req.plan
-
+    const { userId } = await req.auth();
     const plan = req.plan;
-   // const free_usage = req.free_usage;
 
     if (plan !== "premium") {
       return res.json({
         success: false,
-        message:
-          "only avaiable to create images in premium plan.",
+        message: "Only available to create images in premium plan.",
       });
     }
 
+    // ✅ req.file has path, filename, etc.
+    const filePath = req.file.path;
 
+    const { secure_url } = await cloudinary.uploader.upload(filePath, {
+      transformation: [
+        {
+          effect: "background_removal",
+          background_removal: "remove_the_background",
+        },
+      ],
+    });
 
-
-
-//cloudinary uplaod
-const { secure_url } = await cloudinary.uploader.upload(image.path,{transformation:[
-  {
-    effect:'background_removal',
-    background_removal:'remove_the_background',
-  }
-]});
-
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},'Remove background from image', ${secure_url},'image' )`;
-
-    // if (plan !== "premium") {
-    //   await clerkClient.users.updateUserMetadata(userId, {
-    //     privateMetadata: {
-    //       free_usage: free_usage + 1,
-    //     },
-    //   });
-    // }
+    await sql`
+      INSERT INTO creations(user_id, prompt, content, type)
+      VALUES (${userId}, 'Remove background from image', ${secure_url}, 'image')
+    `;
 
     res.json({
       success: true,
-      message: "background image removal created successfully",
-      content:secure_url,
+      message: "Background image removal created successfully",
+      content: secure_url,
     });
   } catch (error) {
-    console.log(error.message);
+    console.error(error);
     res.json({ success: false, message: error.message });
   }
 };
+
+//remove objects
 //remove objects
 export const removeimageobject= async (req, res) => {
-  
-  try {
-    
-    const { userId } =await req.auth(); // ✅ Corrected here
-    const { object } = req.body;
-   // const plan=req.plan
 
+  try {
+    const { userId } =await req.auth();
+    const image = req.file;
+
+    if (!image) {
+      return res.status(400).json({ success: false, message: "No image uploaded" });
+    }
+
+    const { object } = req.body;
     const plan = req.plan;
-   // const free_usage = req.free_usage;
 
     if (plan !== "premium") {
       return res.json({
         success: false,
         message:
-          "can be accessed through premium plan only.",
+          "This feature can only be accessed through the premium plan.",
       });
     }
 
+    // First, upload the image to Cloudinary to get its public ID.
+    // The image path comes from the multer middleware (req.file.path).
+    const uploadResult = await cloudinary.uploader.upload(image.path);
+    const publicId = uploadResult.public_id;
 
+    // Use the `explicit` method to perform the generative removal.
+    // This is the correct way to trigger the AI-powered processing.
+    const removalResult = await cloudinary.uploader.explicit(publicId, {
+      type: 'upload',
+      effect: 'gen_remove',
+      prompt: object, // The object to remove, e.g., "car" or "person in red shirt"
+    });
 
+    // Get the secure URL of the new, processed image.
+    const imageUrl = removalResult.secure_url;
+    console.log("New image URL:", imageUrl);
 
-
-//cloudinary uplaod
-const { public_id } = await cloudinary.uploader.upload(image.path)
-//removiing obect
-const imageurl= cloudinary.url(public_id,{
-  transformation:[{
-    effect:`remove_objects`,
-    remove_objects:object,
-  }],
-  resource_type:'image',
-})
- 
-
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},${`removed ${object} from image`}, ${imageurl},'image' )`;
-
-    // if (plan !== "premium") {
-    //   await clerkClient.users.updateUserMetadata(userId, {
-    //     privateMetadata: {
-    //       free_usage: free_usage + 1,
-    //     },
-    //   });
-    // }
+    // Use userId and the new image URL to insert into your database.
+    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},${`removed ${object} from image`}, ${imageUrl},'image' )`;
 
     res.json({
       success: true,
-      message: "object removal created successfully",
-      content:imageurl,
+      message: "Object removal created successfully",
+      content: imageUrl,
     });
+
   } catch (error) {
-    console.log(error.message);
+    console.error("Error during object removal:", error.message);
     res.json({ success: false, message: error.message });
   }
 };
+
 export const resumereview= async (req, res) => {
   
   try {
@@ -442,3 +428,54 @@ const response = await AI.chat.completions.create({
     res.json({ success: false, message: error.message });
   }
 };
+export const musicgeneration = async (req, res) => {
+  try {
+    // Clerk: user is on req.auth (already populated by your auth middleware)
+       const userId = req.userId;        // ✅ FIX: no await, no ()
+
+    const { prompt } = req.body;        // coming from frontend
+    const plan = req.plan;              // make sure you actually set req.plan in middleware
+
+    if (plan !== "premium") {
+      return res.json({
+        success: false,
+        message: "This feature is only available for premium users.",
+      });
+    }
+
+    // Call your AI model (adjust to your SDK)
+    const response = await AI.chat.completions.create({
+      model: "gemini-2.0-flash",
+      messages: [
+        
+        { role: "user", 
+          content: prompt },
+        
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    // Some SDKs return response.choices[0].message, others response.choices[0].text
+    const content =
+      response.choices?.[0]?.message?.content ||
+      response.choices?.[0]?.text ||
+      "";
+
+    // ✅ FIX: clean SQL insert
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (${userId}, ${prompt}, ${content}, 'music-generation')
+    `;
+
+    res.json({
+      success: true,
+      message: "Music recommendations generated successfully",
+      content,
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+

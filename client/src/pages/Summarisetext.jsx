@@ -1,10 +1,37 @@
 import React, { useState } from 'react'
 import { Sparkles,Newspaper } from 'lucide-react'
+import toast from 'react-hot-toast'
+import Markdown from 'react-markdown'
+import { useAuth } from '@clerk/clerk-react';
+import axios from 'axios'
+axios.defaults.baseURL=import.meta.env.VITE_BASE_URL;
 
 const Summarisetext = () => {
     const [input, setinput] = useState('')
+    const [loading, setloading] = useState(false)
+    const [content, setcontent] = useState('')
+    const { getToken } = useAuth();
         const onsubmithandler = async (e) => {
           e.preventDefault();
+            try{
+          setloading(true)
+          const formdata=new FormData();
+          formdata.append('article',input);
+          const {data}=await axios.post('/api/ai/summarize-article',formdata,{ headers:{
+            Authorization:`Bearer ${await getToken()}`}})
+            if(data.success){
+              setcontent(data.content)
+              toast.success('Summary generated successfully')
+            }
+            else{
+              toast.error(data.message)
+            }
+
+        }
+        catch(error){
+          toast.error(error.message)
+        }
+        setloading(false);
         }
 
     return (
@@ -31,8 +58,9 @@ const Summarisetext = () => {
         </div>
         <br /> */}
         <p className='text-sm text-gray-500 font-light mt-1'>Supports PDF Resumes only.</p>
-        <button className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#ece452] to-[#eff17c] text-blue-950 px-4 py-3 mt-5 text-base rounded-lg cursor-pointer'>
-          <Newspaper className='w-5 ' />
+        <button disabled={loading} className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#ece452] to-[#eff17c] text-blue-950 px-4 py-3 mt-5 text-base rounded-lg cursor-pointer'>
+         {loading? <span className='w-4 h-4 my-1 rounded-full border-2 border-t-transparent animate-spin'></span>: <Newspaper className='w-5 ' />}
+         
           Summarize Article
         </button>
       </form>
@@ -42,12 +70,18 @@ const Summarisetext = () => {
           <Newspaper className='w-5 h-5 text-[#eae46c]' />
           <h1 className='text-xl font-semibold'>Analysis Results </h1>
         </div>
-        <div className="flex-1 flex justify-center items-center">
+        {!content ?( <div className="flex-1 flex justify-center items-center">
           <div className="text-sm flex flex-col items-center gap-5  text-gray-500">
             <Newspaper className='w-9 h-9 ' />
             <p>Upload an Article and click <span className='text-primary'>"Summarize Article"</span> to get started</p>
           </div>
-        </div>
+        </div>):(<div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
+                    <div className="reset-tw">
+                      <Markdown>{content}</Markdown>
+                    </div>
+                  </div>)
+                  }
+       
 
       </div>
     </div>

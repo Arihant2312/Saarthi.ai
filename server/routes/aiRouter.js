@@ -1,18 +1,20 @@
 import express from 'express';
+
 import { auth } from '../middlewares/auth.js'; // Add `.js` if using ES modules
-import { generateArticle,generateimage,blogtitles,removeimagebackground,resumereview ,removeimageobject,summarizearticle} from '../controllers/aicontroller.js'; // Also add `.js` here if needed
+import { generateArticle,generateimage,blogtitles,removeimagebackground,resumereview ,removeimageobject,summarizearticle,musicgeneration} from '../controllers/aicontroller.js'; // Also add `.js` here if needed
 import { upload } from '../configs/multer.js';
 
 const aiRouter = express.Router();
-
 aiRouter.post('/generate-article', auth, generateArticle);
 aiRouter.post('/generate-blog-title', auth, blogtitles);
 aiRouter.post('/generate-image', auth, generateimage);
-aiRouter.post('/remove-image-background',upload.single('image'), auth, removeimagebackground);
-aiRouter.post('/remove-image-object',upload.single('image'), auth, removeimageobject);
+aiRouter.post('/generate-music-recommendation', auth, musicgeneration);
+// Corrected middleware order: auth comes before file upload
+aiRouter.post('/remove-image-background', auth, upload.single('image'), removeimagebackground);
+aiRouter.post('/remove-image-object', auth, upload.single('image'), removeimageobject);
+aiRouter.post('/resume-review', auth, upload.single('resumefile'), resumereview);
+aiRouter.post('/summarize-article', auth, upload.single('article'), summarizearticle);
 
-aiRouter.post('/resume-review', upload.single('resumefile'), auth, resumereview);
-aiRouter.post('/summarize-article',upload.single('article'), auth, summarizearticle);
 
 
 

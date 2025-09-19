@@ -1,4 +1,12 @@
+// configs/multer.js
 import multer from "multer";
-const storage=multer.diskStorage({
+import path from "path";
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname)),
 });
-export const upload=multer({storage})
+console.log("Multer config loaded");
+
+export const upload = multer({ storage });   // ✅ must match the import
