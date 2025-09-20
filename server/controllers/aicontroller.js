@@ -6,8 +6,9 @@ import {v2 as cloudinary} from "cloudinary";
 import FormData from 'form-data';
 import dotenv from 'dotenv';
 dotenv.config();
-import fs from 'fs';
-import pdf from 'pdf-parse/lib/pdf-parse.js';
+// controllers/resumeReview.js
+import fs from "fs";
+import pdf from "pdf-parse";
 //import cloudinary from '../configs/cloudinary.js';
 
 
@@ -338,7 +339,8 @@ const response = await AI.chat.completions.create({
     });
   } catch (error) {
     console.log(error.message);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+
   }
 };
 export const summarizearticle= async (req, res) => {
