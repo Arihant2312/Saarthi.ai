@@ -305,7 +305,7 @@ export const resumereview = async (req, res) => {
     res.json({ success: true, message: "Resume review created successfully", content });
   } catch (error) {
     console.error("Resume review error:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    res.json({ success: false, message: "Internal Server Error" });
   }
 };
 
