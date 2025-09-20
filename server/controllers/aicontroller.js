@@ -6,9 +6,8 @@ import {v2 as cloudinary} from "cloudinary";
 import FormData from 'form-data';
 import dotenv from 'dotenv';
 dotenv.config();
-// controllers/resumeReview.js
-import fs from "fs";
-import pdf from "pdf-parse";
+import fs from 'fs';
+import pdf from 'pdf-parse/lib/pdf-parse.js';
 //import cloudinary from '../configs/cloudinary.js';
 
 
@@ -269,26 +268,34 @@ export const removeimageobject= async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-
 export const resumereview = async (req, res) => {
   try {
     const { userId } = await req.auth();
-    const resumefile = req.file; // From memory storage
     const plan = req.plan;
 
     if (plan !== "premium") {
-      return res.json({ success: false, message: "Premium plan required." });
+      return res.json({
+        success: false,
+        message: "Accessible through premium plan only.",
+      });
     }
 
-    // Check file size
+    const resumefile = req.file;
+
+    if (!resumefile) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
+    }
+
     if (resumefile.size > 10 * 1024 * 1024) {
-      return res.json({ success: false, message: "File exceeds 10MB." });
+      return res.json({
+        success: false,
+        message: "Resume file size should not exceed 10MB.",
+      });
     }
 
-    // Parse PDF directly from buffer
+    // Use buffer directly
     const pdfdata = await pdf(resumefile.buffer);
-
-    const prompt = `Review this resume and provide feedback:\n\n${pdfdata.text}`;
+    const prompt = `Review the following resume and provide feedback on strengths, weaknesses, and areas for improvement. Resume content:\n\n${pdfdata.text}`;
 
     const response = await AI.chat.completions.create({
       model: "gemini-2.0-flash",
@@ -299,13 +306,16 @@ export const resumereview = async (req, res) => {
 
     const content = response.choices[0].message.content;
 
-    await sql`INSERT INTO creations(user_id, prompt, content, type)
-               VALUES (${userId}, 'Resume review', ${content}, 'Resume Review')`;
+    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'Resume Review')`;
 
-    res.json({ success: true, message: "Resume review created successfully", content });
+    res.json({
+      success: true,
+      message: "Resume review created successfully",
+      content,
+    });
   } catch (error) {
-    console.error("Resume review error:", error);
-    res.json({ success: false, message: "Internal Server Error" });
+    console.log(error.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
