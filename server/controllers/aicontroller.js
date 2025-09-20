@@ -270,79 +270,45 @@ export const removeimageobject= async (req, res) => {
   }
 };
 
-export const resumereview= async (req, res) => {
-  
+export const resumereview = async (req, res) => {
   try {
-    
-    const { userId } =await req.auth(); // ✅ Corrected here
-   // const { object } = req.body;
-   // const plan=req.plan
-   const resumefile=req.file;
-
+    const { userId } = await req.auth();
+    const resumefile = req.file; // From memory storage
     const plan = req.plan;
-   // const free_usage = req.free_usage;
 
     if (plan !== "premium") {
-      return res.json({
-        success: false,
-        message:
-          "can be accessed through premium plan only.",
-      });
+      return res.json({ success: false, message: "Premium plan required." });
     }
 
+    // Check file size
+    if (resumefile.size > 10 * 1024 * 1024) {
+      return res.json({ success: false, message: "File exceeds 10MB." });
+    }
 
+    // Parse PDF directly from buffer
+    const pdfdata = await pdf(resumefile.buffer);
 
+    const prompt = `Review this resume and provide feedback:\n\n${pdfdata.text}`;
 
-
-//check file size
-if(resumefile.size>10*1024*1024){
-  return res.json({
-    success: false,
-    message: "Resume file size should not exceed 10MB.",
-  });
-}
-
-//resume file upload
-const databuffer=fs.readFileSync(resumefile.path)
-const pdfdata=await pdf(databuffer)
-const prompt=`Review the follwing ressume and provide feedback on its strengths ,weaknesses and areas for improvement. resume content:\n\n ${pdfdata.text}`
-//google gemini
-
-const response = await AI.chat.completions.create({
+    const response = await AI.chat.completions.create({
       model: "gemini-2.0-flash",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+      messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
       max_tokens: 1000,
     });
-    const content=response.choices[0].message.content;
 
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},'Review the uplaoded resume', ${content},'Resume Review' )`;
+    const content = response.choices[0].message.content;
 
-    // if (plan !== "premium") {
-    //   await clerkClient.users.updateUserMetadata(userId, {
-    //     privateMetadata: {
-    //       free_usage: free_usage + 1,
-    //     },
-    //   });
-    // }
+    await sql`INSERT INTO creations(user_id, prompt, content, type)
+               VALUES (${userId}, 'Resume review', ${content}, 'Resume Review')`;
 
-    res.json({
-      success: true,
-      message: "resume review created successfully",
-      content:content,
-    });
+    res.json({ success: true, message: "Resume review created successfully", content });
   } catch (error) {
-    console.log(error.message);
+    console.error("Resume review error:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
-
   }
 };
+
 export const summarizearticle= async (req, res) => {
   
   try {

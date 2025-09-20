@@ -1,95 +1,109 @@
 import { FileText, Sparkles } from 'lucide-react';
-import React, { useState } from 'react'
-import axios from 'axios'
+import React, { useState } from 'react';
+import axios from 'axios';
 import { useAuth } from '@clerk/clerk-react';
 import toast from 'react-hot-toast';
 import Markdown from 'react-markdown';
+
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 function ReviewResume() {
-  const [input, setinput] = useState('')
-  const [loading, setloading] = useState(false)
-  const [content, setcontent] = useState('')
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState('');
   const { getToken } = useAuth();
-      const onsubmithandler = async (e) => {
-        e.preventDefault();
-        try{
-          setloading(true)
-          const formdata=new FormData();
-          formdata.append('resumefile',input);
-          const {data}=await axios.post('/api/ai/resume-review',formdata,{ headers:{
-            Authorization:`Bearer ${await getToken()}`}})
-            if(data.success){
-              setcontent(data.content)
-              toast.success('Resume reviewed successfully')
-            }
-            else{
-              toast.error(data.message)
-            }
 
-        }
-        catch(error){
-          toast.error(error.message)
-        }
-  setloading(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!file) {
+      toast.error('Please upload a PDF file');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('resumefile', file);
+
+    try {
+      setLoading(true);
+      const { data } = await axios.post('/api/ai/resume-review', formData, {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      });
+
+      if (data.success) {
+        setContent(data.content);
+        toast.success('Resume reviewed successfully');
+      } else {
+        toast.error(data.message);
       }
-  return (
-<div className='h-full overflow-y-scroll p-6 flex items-start flex-wrap gap-4 text-slate-700'>
-      <form onSubmit={onsubmithandler} action='' className='w-full max-w-lg p-4 bg-white rounded-lg border border-gray-200'>
-        <div className="flex items-center gap-3">
-          <Sparkles className='w-6 text-[#00DA83]' />
-          <h1 className='text-xl font-semibold'>Resume Reveiw</h1>
-        </div>
-        <p className='mt-6 text-base font-medium'>Upload resume</p>
-<input
-  type="file"
-  accept="application/pdf"
-  required
-  onChange={(e) => setinput(e.target.files[0])}
-  className="w-full p-2 px-4 mt-2 outline-none text-base rounded-md border border-gray-400 text-gray-600"
-/>
-       {/* // <p className='mt-4 text-base font-medium'>Category</p>
-        <div className=" mt-3 flex gap-4 flex-wrap sm:max-w-9/11  ">
-          {blogcategories.map((item) => (
-            <span onClick={() =>setselcateg(item)} className={`text-sm px-4 py-1 border rounded-full cursor-pointer ${selcat === item ? 'bg-purple-100 text-purple-700' : 'text-gray-500 border-gray-300'} `} key={item}>{item}</span>
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          ))}
+  return (
+    <div className='h-full overflow-y-scroll p-6 flex flex-col gap-6 text-slate-700'>
+      {/* Upload Form */}
+      <form
+        onSubmit={handleSubmit}
+        className='w-full max-w-lg p-4 bg-white rounded-lg border border-gray-200'
+      >
+        <div className='flex items-center gap-3'>
+          <Sparkles className='w-6 text-[#00DA83]' />
+          <h1 className='text-xl font-semibold'>Resume Review</h1>
         </div>
-        <br /> */}
-        <p className='text-sm text-gray-500 font-light mt-1'>Supports PDF Resumes only.</p>
-        <button disabled={loading} className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#00DA83] to-[#009BB3] text-white px-4 py-3 mt-5 text-base rounded-lg cursor-pointer'>
-         
-         {
-loading ? <span className='w-4 h-4 my-1 rounded-full border-2 border-t-transparent animate-spin'></span> :<FileText className='w-5 ' />
-         } 
+
+        <p className='mt-6 text-base font-medium'>Upload your resume (PDF only)</p>
+        <input
+          type='file'
+          accept='application/pdf'
+          required
+          onChange={(e) => setFile(e.target.files[0])}
+          className='w-full p-2 px-4 mt-2 outline-none text-base rounded-md border border-gray-400 text-gray-600'
+        />
+
+        <p className='text-sm text-gray-500 font-light mt-1'>Supports PDF resumes only.</p>
+
+        <button
+          type='submit'
+          disabled={loading}
+          className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#00DA83] to-[#009BB3] text-white px-4 py-3 mt-5 text-base rounded-lg cursor-pointer'
+        >
+          {loading ? (
+            <span className='w-4 h-4 my-1 rounded-full border-2 border-t-transparent animate-spin'></span>
+          ) : (
+            <FileText className='w-5' />
+          )}
           Review Resume
         </button>
       </form>
-      {/* right column */}
-      <div className="w-full max-w-lg p-4 bg-white rounded-lg flex flex-col border border-gray-200 min-h-96 ">
-        <div className="flex items-center gap-3">
+
+      {/* Result */}
+      <div className='w-full max-w-lg p-4 bg-white rounded-lg border border-gray-200 min-h-[200px]'>
+        <div className='flex items-center gap-3'>
           <FileText className='w-5 h-5 text-[#00DA83]' />
-          <h1 className='text-xl font-semibold'>Analysis Results </h1>
+          <h1 className='text-xl font-semibold'>Analysis Results</h1>
         </div>
-        {
-          !content?(<div className="flex-1 flex justify-center items-center">
-          <div className="text-sm flex flex-col items-center gap-5  text-gray-500">
-            <FileText className='w-9 h-9 ' />
-            <p>Upload an Resume and click <span className='text-primary'>"Remove Background"</span> to get started</p>
+
+        {content ? (
+          <div className='mt-3 h-full overflow-y-scroll text-sm text-slate-600'>
+            <Markdown>{content}</Markdown>
           </div>
-        </div>):(
-          <div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
-            <div className="reset-tw">
-              <Markdown>{content}</Markdown>
+        ) : (
+          <div className='flex-1 flex justify-center items-center'>
+            <div className='text-sm flex flex-col items-center gap-5 text-gray-500'>
+              <FileText className='w-9 h-9' />
+              <p>Upload a Resume and click "Review Resume" to get started</p>
             </div>
           </div>
-        )
-        }
-        
-
+        )}
       </div>
     </div>
-  )
+  );
 }
 
-export default ReviewResume
+export default ReviewResume;
