@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import cors from 'cors'; // Only import once
 import 'dotenv/config';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
 import aiRouter from './routes/aiRouter.js'; 
@@ -11,12 +11,12 @@ const app = express();
 await connectcloudinary();
 
 // ✅ CORS config for frontend with credentials
-import cors from "cors";
 app.use(cors({
   origin: "https://saarthiai-plum.vercel.app",
-  credentials: true,          // if you send cookies/auth
+  credentials: true,
   methods: ["GET","POST","PUT","DELETE","OPTIONS"],
 }));
+
 // Handle OPTIONS requests globally
 app.options("*", cors());
 
