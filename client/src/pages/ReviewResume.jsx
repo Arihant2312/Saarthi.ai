@@ -46,7 +46,7 @@ function ReviewResume() {
   };
 
   return (
-    <div className='h-full overflow-y-scroll p-6 flex flex-col gap-6 text-slate-700'>
+    <div className='h-full overflow-y-scroll p-6 flex flex-col flex-wrap gap-6 text-slate-700'>
       {/* Upload Form */}
       <form
         onSubmit={handleSubmit}
