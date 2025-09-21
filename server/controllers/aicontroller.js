@@ -228,8 +228,6 @@ export const removeimagebackground = async (req, res) => {
 //remove objects
 
 //under maiintenance
-import streamifier from "streamifier";
-import { v2 as cloudinary } from "cloudinary";
 
 export const removeimageobject = async (req, res) => {
   try {
