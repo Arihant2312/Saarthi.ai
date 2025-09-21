@@ -1,32 +1,30 @@
 import express from 'express';
-import cors from 'cors'; // Only import once
+import cors from 'cors';
 import 'dotenv/config';
 import { clerkMiddleware, requireAuth } from '@clerk/express';
-import aiRouter from './routes/aiRouter.js'; 
-import userRouter from './routes/userRouter.js';  
+import aiRouter from './routes/aiRouter.js';
+import userRouter from './routes/userRouter.js';
 import connectcloudinary from './configs/cloudinary.js';
 
 const app = express();
 
-await connectcloudinary();
+// Initialize Cloudinary
+(async () => {
+  await connectcloudinary();
+})();
 
-// ✅ CORS config for frontend with credentials
+// CORS configuration
 app.use(cors({
   origin: "https://saarthiai-plum.vercel.app",
   credentials: true,
   methods: ["GET","POST","PUT","DELETE","OPTIONS"],
 }));
 
-// Handle OPTIONS requests globally
-app.options("*", cors());
-
 app.use(express.json());
 app.use(clerkMiddleware());
 
 // Test route
-app.get('/', (req, res) => {
-  res.send("server is running");
-});
+app.get('/', (req, res) => res.send("Server is running"));
 
 // Protected routes
 app.use('/api/ai', requireAuth(), aiRouter);
