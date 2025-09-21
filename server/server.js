@@ -11,11 +11,14 @@ const app = express();
 await connectcloudinary();
 
 // ✅ CORS config for frontend with credentials
+import cors from "cors";
 app.use(cors({
-  origin: process.env.CLIENT_URL,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
+  origin: "https://saarthiai-plum.vercel.app",
+  credentials: true,          // if you send cookies/auth
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
 }));
+// Handle OPTIONS requests globally
+app.options("*", cors());
 
 app.use(express.json());
 app.use(clerkMiddleware());
