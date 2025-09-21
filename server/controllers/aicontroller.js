@@ -228,58 +228,60 @@ export const removeimagebackground = async (req, res) => {
 //remove objects
 
 //under maiintenance
-// export const removeimageobject= async (req, res) => {
+import streamifier from "streamifier";
+import { v2 as cloudinary } from "cloudinary";
 
-//   try {
-//     const { userId } =await req.auth();
-//     const image = req.file;
+export const removeimageobject = async (req, res) => {
+  try {
+    const { userId } = await req.auth();
+    const image = req.file;
+    const { object } = req.body;
+    const plan = req.plan;
 
-//     if (!image) {
-//       return res.status(400).json({ success: false, message: "No image uploaded" });
-//     }
+    if (!image || !image.buffer) {
+      return res.status(400).json({ success: false, message: "No image uploaded" });
+    }
 
-//     const { object } = req.body;
-//     const plan = req.plan;
+    if (plan !== "premium") {
+      return res.json({
+        success: false,
+        message: "This feature can only be accessed through the premium plan.",
+      });
+    }
 
-//     if (plan !== "premium") {
-//       return res.json({
-//         success: false,
-//         message:
-//           "This feature can only be accessed through the premium plan.",
-//       });
-//     }
+    // Function to upload buffer to Cloudinary with generative removal
+    const streamUpload = (buffer, prompt) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { transformation: [{ effect: "gen_remove" }], context: { prompt } },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+      });
 
-//     // First, upload the image to Cloudinary to get its public ID.
-//     // The image path comes from the multer middleware (req.file.path).
-//     const uploadResult = await cloudinary.uploader.upload(image.path);
-//     const publicId = uploadResult.public_id;
+    // Upload image with object removal
+    const result = await streamUpload(image.buffer, object);
+    const secure_url = result.secure_url;
 
-//     // Use the `explicit` method to perform the generative removal.
-//     // This is the correct way to trigger the AI-powered processing.
-//     const removalResult = await cloudinary.uploader.explicit(publicId, {
-//       type: 'upload',
-//       effect: 'gen_remove',
-//       prompt: object, // The object to remove, e.g., "car" or "person in red shirt"
-//     });
+    // Save to database
+    await sql`
+      INSERT INTO creations(user_id, prompt, content, type)
+      VALUES (${userId}, ${`removed ${object} from image`}, ${secure_url}, 'image')
+    `;
 
-//     // Get the secure URL of the new, processed image.
-//     const imageUrl = removalResult.secure_url;
-//     console.log("New image URL:", imageUrl);
-
-//     // Use userId and the new image URL to insert into your database.
-//     await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},${`removed ${object} from image`}, ${imageUrl},'image' )`;
-
-//     res.json({
-//       success: true,
-//       message: "Object removal created successfully",
-//       content: imageUrl,
-//     });
-
-//   } catch (error) {
-//     console.error("Error during object removal:", error.message);
-//     res.json({ success: false, message: error.message });
-//   }
-// };
+    res.json({
+      success: true,
+      message: "Object removal created successfully",
+      content: secure_url,
+    });
+  } catch (error) {
+    console.error("Error during object removal:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 export const resumereview = async (req, res) => {
   try {
     const { userId } = await req.auth();
