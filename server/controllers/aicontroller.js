@@ -352,8 +352,8 @@ if(article.size>30*1024*1024){
 }
 
 //resume file upload
-const databuffer=fs.readFileSync(article.path)
-const pdfdata=await pdf(databuffer)
+
+const pdfdata=await pdf(article.buffer)
 const prompt = `
 You are an academic tutor. Read the document and provide a clear, structured response with the following sections:
 
@@ -380,7 +380,7 @@ const response = await AI.chat.completions.create({
           content: prompt,
         },
       ],
-      temperature: 0.5,
+      temperature: 0.7,
       max_tokens:2000,
     });
     const content=response.choices[0].message.content;
