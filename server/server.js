@@ -12,9 +12,9 @@ await connectcloudinary();
 
 // ✅ CORS config for frontend with credentials
 app.use(cors({
-  origin: 'https://saarthiai-plum.vercel.app', // your frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true, // allow cookies/auth headers
+  origin: process.env.CLIENT_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
 }));
 
 app.use(express.json());
