@@ -6,6 +6,8 @@ import {v2 as cloudinary} from "cloudinary";
 import FormData from 'form-data';
 import dotenv from 'dotenv';
 dotenv.config();
+import streamifier from "streamifier";
+
 import fs from 'fs';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 //import cloudinary from '../configs/cloudinary.js';
@@ -186,17 +188,25 @@ export const removeimagebackground = async (req, res) => {
       });
     }
 
-    // ✅ req.file has path, filename, etc.
-    const filePath = req.file.path;
+    if (!req.file || !req.file.buffer) {
+      return res.status(400).json({ success: false, message: "No image uploaded" });
+    }
 
-    const { secure_url } = await cloudinary.uploader.upload(filePath, {
-      transformation: [
-        {
-          effect: "background_removal",
-          background_removal: "remove_the_background",
-        },
-      ],
-    });
+    // Stream upload to Cloudinary
+    const streamUpload = (buffer) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { transformation: [{ effect: "background_removal" }] },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+      });
+
+    const result = await streamUpload(req.file.buffer);
+    const secure_url = result.secure_url;
 
     await sql`
       INSERT INTO creations(user_id, prompt, content, type)
@@ -210,64 +220,66 @@ export const removeimagebackground = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 //remove objects
 //remove objects
-export const removeimageobject= async (req, res) => {
 
-  try {
-    const { userId } =await req.auth();
-    const image = req.file;
+//under maiintenance
+// export const removeimageobject= async (req, res) => {
 
-    if (!image) {
-      return res.status(400).json({ success: false, message: "No image uploaded" });
-    }
+//   try {
+//     const { userId } =await req.auth();
+//     const image = req.file;
 
-    const { object } = req.body;
-    const plan = req.plan;
+//     if (!image) {
+//       return res.status(400).json({ success: false, message: "No image uploaded" });
+//     }
 
-    if (plan !== "premium") {
-      return res.json({
-        success: false,
-        message:
-          "This feature can only be accessed through the premium plan.",
-      });
-    }
+//     const { object } = req.body;
+//     const plan = req.plan;
 
-    // First, upload the image to Cloudinary to get its public ID.
-    // The image path comes from the multer middleware (req.file.path).
-    const uploadResult = await cloudinary.uploader.upload(image.path);
-    const publicId = uploadResult.public_id;
+//     if (plan !== "premium") {
+//       return res.json({
+//         success: false,
+//         message:
+//           "This feature can only be accessed through the premium plan.",
+//       });
+//     }
 
-    // Use the `explicit` method to perform the generative removal.
-    // This is the correct way to trigger the AI-powered processing.
-    const removalResult = await cloudinary.uploader.explicit(publicId, {
-      type: 'upload',
-      effect: 'gen_remove',
-      prompt: object, // The object to remove, e.g., "car" or "person in red shirt"
-    });
+//     // First, upload the image to Cloudinary to get its public ID.
+//     // The image path comes from the multer middleware (req.file.path).
+//     const uploadResult = await cloudinary.uploader.upload(image.path);
+//     const publicId = uploadResult.public_id;
 
-    // Get the secure URL of the new, processed image.
-    const imageUrl = removalResult.secure_url;
-    console.log("New image URL:", imageUrl);
+//     // Use the `explicit` method to perform the generative removal.
+//     // This is the correct way to trigger the AI-powered processing.
+//     const removalResult = await cloudinary.uploader.explicit(publicId, {
+//       type: 'upload',
+//       effect: 'gen_remove',
+//       prompt: object, // The object to remove, e.g., "car" or "person in red shirt"
+//     });
 
-    // Use userId and the new image URL to insert into your database.
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},${`removed ${object} from image`}, ${imageUrl},'image' )`;
+//     // Get the secure URL of the new, processed image.
+//     const imageUrl = removalResult.secure_url;
+//     console.log("New image URL:", imageUrl);
 
-    res.json({
-      success: true,
-      message: "Object removal created successfully",
-      content: imageUrl,
-    });
+//     // Use userId and the new image URL to insert into your database.
+//     await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},${`removed ${object} from image`}, ${imageUrl},'image' )`;
 
-  } catch (error) {
-    console.error("Error during object removal:", error.message);
-    res.json({ success: false, message: error.message });
-  }
-};
+//     res.json({
+//       success: true,
+//       message: "Object removal created successfully",
+//       content: imageUrl,
+//     });
+
+//   } catch (error) {
+//     console.error("Error during object removal:", error.message);
+//     res.json({ success: false, message: error.message });
+//   }
+// };
 export const resumereview = async (req, res) => {
   try {
     const { userId } = await req.auth();
