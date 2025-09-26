@@ -21,11 +21,11 @@ function Layout() {
   return (
     <div className="flex flex-col h-screen">
       {/* Top Navbar */}
-      <nav className="w-full px-4 sm:px-7 h-12 flex items-center justify-start border-b border-gray-200 bg-[#1e1f4d]">
+      <nav className="w-full px-4 sm:px-7 h-12 flex items-center justify-start border-b border-gray-200 bg-[#050625]">
         <img
-          src={assets.logo}
+          src="/image.png"
           alt="logo"
-          className=" h-10 rounded-full bg-transparent object-center cursor-pointer"
+          className=" h-9 rounded bg-transparent object-center cursor-pointer"
           onClick={() => navigate('/')}
         />
         {sidebar ? (
