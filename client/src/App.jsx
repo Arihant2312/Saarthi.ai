@@ -20,7 +20,7 @@ function App() {
 //testing apis
  
   return (
-    <div>
+    <div >
       <Toaster/>
       <Routes>
         <Route path='/' element={<Home />} />

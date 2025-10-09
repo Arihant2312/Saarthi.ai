@@ -51,18 +51,33 @@ export const AiToolsData = [
     },
     {
         title: 'Object Removal',
-        description: 'Remove unwanted objects from your images seamlessly with our AI object removal tool.',
+        description: 'Remove unwanted objects from your photos seamlessly',
         Icon: Scissors,
         bg: { from: '#5C6AF1', to: '#427DF5' },
         path: '/ai/remove-object'
     },
     {
         title: 'Resume Reviewer',
-        description: 'Get your resume reviewed by AI to improve your chances of landing your dream job.',
+        description: 'Get your resume reviewed by AI for improvements and optimization.',
         Icon: FileText,
         bg: { from: '#12B7AC', to: '#08B6CE' },
         path: '/ai/review-resume'
-    }
+    },
+     {
+        title: 'Music Recommendation',
+        description: 'Recommends tailored music to your taste with our AI-powered recommendation engine.',
+        Icon: SquarePen,
+        bg: { from: '#3588F2', to: '#0BB0D7' },
+        path: '/ai/write-article'
+    },
+    {
+        title: 'Article Summarizer',
+        description: 'Summarizes lengthy articles into concise summaries with our AI summarization tool.',
+        Icon: SquarePen,
+        bg: { from: '#3588F2', to: '#0BB0D7' },
+        path: '/ai/write-article'
+    },
+
 ]
 
 export const dummyTestimonialData = [
