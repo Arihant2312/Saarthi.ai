@@ -14,11 +14,14 @@ const app = express();
 })();
 
 // CORS configuration
-app.use(cors({
-  origin: "https://saarthiai-plum.vercel.app",
-  credentials: true,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-}));
+
+
+app.use(
+  cors({
+    origin: true, // ✅ allow all origins dynamically
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 app.use(clerkMiddleware());
