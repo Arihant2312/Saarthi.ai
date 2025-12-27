@@ -12,19 +12,33 @@ const app = express();
 (async () => {
   await connectcloudinary();
 })();
+const allowedOrigins = [
+// ✅ CORS FIRSTconst allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://live-msarhrj8x-arihant-jains-projects-9564dcc6.vercel.app",
+];
 
-// ✅ CORS FIRST
 app.use(
   cors({
-    origin: true,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked"));
+      }
+    },
     credentials: true,
   })
 );
 
+app.options(/.*/, cors());
+
+
 // ✅ ALLOW PREFLIGHT
 //app.options('/*', cors());
 
-app.options(/.*/, cors());
+
 app.use(express.json());
 
 // ✅ Clerk AFTER CORS
