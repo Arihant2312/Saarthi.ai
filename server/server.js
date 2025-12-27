@@ -13,23 +13,27 @@ const app = express();
   await connectcloudinary();
 })();
 
-// CORS configuration
-
-
+// ✅ CORS FIRST
 app.use(
   cors({
-    origin: true, // ✅ allow all origins dynamically
+    origin: true,
     credentials: true,
   })
 );
 
+// ✅ ALLOW PREFLIGHT
+//app.options('/*', cors());
+
+app.options(/.*/, cors());
 app.use(express.json());
+
+// ✅ Clerk AFTER CORS
 app.use(clerkMiddleware());
 
 // Test route
 app.get('/', (req, res) => res.send("Server is running"));
 
-// Protected routes
+// ✅ Protected routes
 app.use('/api/ai', requireAuth(), aiRouter);
 app.use('/api/user', requireAuth(), userRouter);
 
