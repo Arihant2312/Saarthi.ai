@@ -25,8 +25,7 @@ function App() {
 
     const check = async () => {
       const token = await getToken();
-      console.log("SIGNED IN:", isSignedIn);
-      console.log("TOKEN:", token);
+      
     };
 
     check();

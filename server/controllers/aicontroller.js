@@ -1,28 +1,29 @@
-import OpenAI from "openai";
+
+import dotenv from 'dotenv';
+dotenv.config();
+import { GoogleGenAI } from "@google/genai";
 import sql from "../configs/db.js";
 import { clerkClient } from "@clerk/express";
 import axios from "axios";
 import {v2 as cloudinary} from "cloudinary";
 import FormData from 'form-data';
-import dotenv from 'dotenv';
-dotenv.config();
+
 import streamifier from "streamifier";
 
 import fs from 'fs';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
-//import cloudinary from '../configs/cloudinary.js';
-
-
-
-
-const AI = new OpenAI({
+const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+  
 });
-//generate articles
+//console.log("GoogleGenAI loaded:", typeof GoogleGenAI);
+
+
+
+//article generation
 export const generateArticle = async (req, res) => {
   try {
-    const userId = req.userId; // ✅ Corrected here
+    const userId = req.userId;
     const { prompt, length } = req.body;
     const plan = req.plan;
     const free_usage = req.free_usage;
@@ -30,33 +31,45 @@ export const generateArticle = async (req, res) => {
     if (plan !== "premium" && free_usage >= 10) {
       return res.json({
         success: false,
-        message:
-          "Your free usage limit has been reached. Please upgrade to a premium plan to continue writing articles.",
+        message: "Free usage limit reached. Upgrade to premium.",
       });
     }
 
-    const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: length,
+    // 🔥 SHORTER, FASTER PROMPT
+    const enhancedPrompt = `
+Write a professional article on the topic below.
+
+Rules:
+- About ${length || 600} words
+- Clear introduction
+- Well-structured paragraphs
+- Professional tone
+- No emojis
+- No markdown
+- Make headings and key lines bold
+
+Topic:
+${prompt}
+`;
+
+    // ⚡ FAST GEMINI CALL
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",     // ✅ fastest & most stable
+      contents: enhancedPrompt,
+      temperature: 0.4,            // lower randomness = faster
+      maxOutputTokens: 700,        // cap output
     });
 
-    const content = response.choices[0].message.content;
+    const content = response.text;
 
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'article')`;
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (${userId}, ${prompt}, ${content}, 'article')
+    `;
 
     if (plan !== "premium") {
       await clerkClient.users.updateUserMetadata(userId, {
-        privateMetadata: {
-          free_usage: free_usage + 1,
-        },
+        privateMetadata: { free_usage: free_usage + 1 },
       });
     }
 
@@ -65,44 +78,59 @@ export const generateArticle = async (req, res) => {
       message: "Article created successfully",
       content,
     });
+
   } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
+    console.error("ARTICLE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate article",
+    });
   }
 };
+
 // blog titles
-export const blogtitles= async (req, res) => {
+
+export const blogtitles = async (req, res) => {
   try {
-    const userId = req.userId; // ✅ Corrected here
+    const userId = req.userId;
     const { prompt } = req.body;
     const plan = req.plan;
     const free_usage = req.free_usage;
 
+    // 🔐 Auth check
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    // 🚫 Free usage limit
     if (plan !== "premium" && free_usage >= 10) {
       return res.json({
         success: false,
         message:
-          "Your free usage limit has been reached. Please upgrade to a premium plan to continue for blogging articles.",
+          "Your free usage limit has been reached. Please upgrade to a premium plan.",
       });
     }
 
-    const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 200,
+    // ✅ Gemini call (NEW SDK – WORKING)
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite", // ✅ safest model
+      contents: prompt,
+      temperature: "0.5",
+      max_tokens: "500",
     });
 
-    const content = response.choices[0].message.content;
+    const content = response.text;
 
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId}, ${prompt}, ${content}, 'blog-article-title')`;
+    // 💾 Save to DB
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (${userId}, ${prompt}, ${content}, 'blog-article-title')
+    `;
 
+    // 📈 Update free usage
     if (plan !== "premium") {
       await clerkClient.users.updateUserMetadata(userId, {
         privateMetadata: {
@@ -111,16 +139,22 @@ export const blogtitles= async (req, res) => {
       });
     }
 
+    // ✅ Response
     res.json({
       success: true,
-      message: "Article created successfully",
+      message: "Blog title generated successfully",
       content,
     });
+
   } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
+    console.error("BLOG TITLE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate blog title",
+    });
   }
 };
+
 //image generation
 export const generateimage= async (req, res) => {
   
@@ -282,7 +316,7 @@ export const removeimageobject = async (req, res) => {
 };
 export const resumereview = async (req, res) => {
   try {
-    const { userId } = await req.auth();
+    const userId = req.userId;   // keep consistent
     const plan = req.plan;
 
     if (plan !== "premium") {
@@ -295,7 +329,10 @@ export const resumereview = async (req, res) => {
     const resumefile = req.file;
 
     if (!resumefile) {
-      return res.status(400).json({ success: false, message: "No file uploaded" });
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
     }
 
     if (resumefile.size > 10 * 1024 * 1024) {
@@ -305,119 +342,134 @@ export const resumereview = async (req, res) => {
       });
     }
 
-    // Use buffer directly
+    // 📄 Extract text from PDF
     const pdfdata = await pdf(resumefile.buffer);
-    const prompt = `Review the following resume and provide feedback on strengths, weaknesses, and areas for improvement. Resume content:\n\n${pdfdata.text}`;
 
-    const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 1000,
+    const reviewPrompt = `
+You are a professional HR resume reviewer.
+
+Review the resume below and provide:
+1. Strengths
+2. Weaknesses
+3. Areas for improvement
+4. Overall feedback
+
+Resume Content:
+${pdfdata.text}
+`;
+
+    // ✅ Gemini call (CORRECT)
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: reviewPrompt,
     });
 
-    const content = response.choices[0].message.content;
+    const content = response.text;
 
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId}, 'Review the uploaded resume', ${content}, 'Resume Review')`;
+    // 💾 Save to DB
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (${userId}, 'Review the uploaded resume', ${content}, 'Resume Review')
+    `;
 
     res.json({
       success: true,
       message: "Resume review created successfully",
       content,
     });
+
   } catch (error) {
-    console.log(error.message);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
+    console.error("RESUME REVIEW ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
-export const summarizearticle= async (req, res) => {
-  
+export const summarizearticle = async (req, res) => {
   try {
-    
-    const { userId } =await req.auth(); // ✅ Corrected here
-   // const { object } = req.body;
-   // const plan=req.plan
-   const article=req.file;
-
+    const userId = req.userId;       // consistent with other controllers
     const plan = req.plan;
-   // const free_usage = req.free_usage;
+    const article = req.file;
 
     if (plan !== "premium") {
       return res.json({
         success: false,
-        message:
-          "can be accessed through premium plan only.",
+        message: "Can be accessed through premium plan only.",
       });
     }
 
+    if (!article) {
+      return res.status(400).json({
+        success: false,
+        message: "No document uploaded.",
+      });
+    }
 
+    // 📏 File size check (30MB)
+    if (article.size > 30 * 1024 * 1024) {
+      return res.json({
+        success: false,
+        message: "Document size should not exceed 30MB.",
+      });
+    }
 
+    // 📄 Extract text from PDF
+    const pdfdata = await pdf(article.buffer);
 
+    const summaryPrompt = `
+You are an academic tutor.
 
-//check file size
-if(article.size>30*1024*1024){
-  return res.json({
-    success: false,
-    message: "Resume file size should not exceed 30MB.",
-  });
-}
+Read the document below and respond in a clear, structured manner with these sections:
 
-//resume file upload
+Main Purpose:
+- Summarize the main goal or objective of the document.
 
-const pdfdata=await pdf(article.buffer)
-const prompt = `
-You are an academic tutor. Read the document and provide a clear, structured response with the following sections:
+Key Points:
+- List the major themes, arguments, or focus areas.
 
-### 📘 Main Purpose
-Summarize the main goal or objective of the document.
+Suggestions for Improvement:
+- Suggest specific additions, clarifications, or improvements that would help a student better understand the document.
 
-### ✅ Key Points
-List the major themes, arguments, or focus areas covered.
-
-### 🛠️ Suggestions for Improvement
-Suggest what specific information, clarification, or additions could make the document more helpful or complete for student understanding.
-
-Document:
+Document Content:
 ${pdfdata.text}
 `;
 
-//google gemini
-
-const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens:2000,
+    // ✅ Gemini call (NEW SDK ONLY)
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",   // safest & stable
+      contents: summaryPrompt,
     });
-    const content=response.choices[0].message.content;
 
-    // ✅ Use userId instead of undefined userid
-    await sql`INSERT INTO creations(user_id, prompt, content, type) VALUES (${userId},'Review the upladed document', ${content},'Article summarizer' )`;
+    const content = response.text;
 
-    // if (plan !== "premium") {
-    //   await clerkClient.users.updateUserMetadata(userId, {
-    //     privateMetadata: {
-    //       free_usage: free_usage + 1,
-    //     },
-    //   });
-    // }
+    // 💾 Save to DB
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (
+        ${userId},
+        'Summarize uploaded document',
+        ${content},
+        'Article Summarizer'
+      )
+    `;
 
     res.json({
       success: true,
-      message: "article sumamrized created successfully",
-      content:content,
+      message: "Article summarized successfully",
+      content,
     });
+
   } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
+    console.error("ARTICLE SUMMARY ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to summarize document",
+    });
   }
 };
+
 export const musicgeneration = async (req, res) => {
   try {
     // Clerk: user is on req.auth (already populated by your auth middleware)
@@ -435,7 +487,7 @@ export const musicgeneration = async (req, res) => {
 
     // Call your AI model (adjust to your SDK)
     const response = await AI.chat.completions.create({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       messages: [
         
         { role: "user", 

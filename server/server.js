@@ -12,22 +12,13 @@ const app = express();
 (async () => {
   await connectcloudinary();
 })();
-const allowedOrigins = [
-// ✅ CORS FIRSTconst allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://live-msarhrj8x-arihant-jains-projects-9564dcc6.vercel.app",
-];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS blocked"));
-      }
-    },
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+    ],
     credentials: true,
   })
 );
@@ -48,8 +39,14 @@ app.use(clerkMiddleware());
 app.get('/', (req, res) => res.send("Server is running"));
 
 // ✅ Protected routes
+
+
 app.use('/api/ai', requireAuth(), aiRouter);
 app.use('/api/user', requireAuth(), userRouter);
+
+
+
+
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));

@@ -3,7 +3,7 @@ import { clerkClient } from "@clerk/express";
 // Middleware to check if user has a premium plan
 export const auth = async (req, res, next) => {
   try {
-    const { userId, has } = await req.auth(); // FIX: 'userId', not 'userid'
+    const { userId, has } = req.auth(); // FIX: 'userId', not 'userid'
     const hasPremium = await has({ plan: 'premium' }); // FIX: typo 'hasprem'
 
     const user = await clerkClient.users.getUser(userId);
