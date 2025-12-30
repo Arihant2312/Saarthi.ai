@@ -1,5 +1,21 @@
+
 {
   "installCommand": "npm install --no-optional",
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+
+  "rewrites": [
+    {
+      "source": "/_vercel/insights/(.*)",
+      "destination": "/_vercel/insights/$1"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
 }
