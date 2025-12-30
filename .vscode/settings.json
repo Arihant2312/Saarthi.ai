@@ -1,0 +1,28 @@
+{
+    "emmet.includeLanguages": {
+  "javascript": "javascriptreact",
+  "javascriptreact": "html",
+  "typescriptreact": "html"
+},
+"emmet.triggerExpansionOnTab": true,
+
+
+
+  "javascript.suggest.autoImports": true,
+  "typescript.suggest.autoImports": true,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  },
+  "editor.suggestSelection": "first",
+  "editor.tabCompletion": "on",
+  "files.associations": {
+    "*.js": "javascriptreact",
+    "*.jsx": "javascriptreact"
+  },
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "javascriptreact": "html"
+  }
+}
