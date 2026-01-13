@@ -486,23 +486,19 @@ export const musicgeneration = async (req, res) => {
     }
 
     // Call your AI model (adjust to your SDK)
-    const response = await AI.chat.completions.create({
-      model: "gemini-1.5-flash",
-      messages: [
-        
-        { role: "user", 
-          content: prompt },
-        
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      temperature: 0.9,
+      max_tokens: 1000,
     });
+        
+    
 
     // Some SDKs return response.choices[0].message, others response.choices[0].text
-    const content =
-      response.choices?.[0]?.message?.content ||
-      response.choices?.[0]?.text ||
-      "";
+const content =
+  response.candidates?.[0]?.content?.parts?.map(p => p.text).join("") || "";
+console.log("Music generation content:", content);
 
     // ✅ FIX: clean SQL insert
     await sql`
