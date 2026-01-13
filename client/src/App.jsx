@@ -18,23 +18,7 @@ import MusicRecommend from "./pages/MusicRecommend";
 import Summarisetext from "./pages/Summarisetext";
 
 function App() {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
-
-  useEffect(() => {
-    if (!isLoaded) return; // ⛔ wait for Clerk
-
-    const check = async () => {
-      const token = await getToken();
-      
-    };
-
-    check();
-  }, [isLoaded]);
-
-  // ⛔ Don't render app until Clerk is ready
-  if (!isLoaded) {
-    return <div>Loading authentication...</div>;
-  }
+  const { isSignedIn } = useAuth();
 
   return (
     <div>
