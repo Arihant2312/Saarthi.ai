@@ -29,7 +29,7 @@ const Hero = () => {
       />
 
       {/* Hero Content */}
-      <div className="relative z-10 flex flex-col items-center text-center gap-4 sm:gap-6">
+      <div className="relative z-10 flex flex-col items-center text-center gap-4 sm:gap-7">
         <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
           Create Amazing Content <br className="hidden sm:block" />
           with{' '}
@@ -67,7 +67,7 @@ const Hero = () => {
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6 w-full sm:w-auto items-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 sm:mt-6 w-full sm:w-auto items-center">
           <button
             onClick={handleStart}
             className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient from-pink-500 via-purple-500 to-indigo-500 border-purple-500/20
@@ -105,7 +105,7 @@ const Hero = () => {
           </div>
 
           {/* Feature Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 md:gap-4 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6 sm:gap-3 md:gap-8 w-full sm:w-auto">
             <span className="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold tracking-wide
                              bg-white/10 text-purple-300 border border-purple-400/30
                              shadow-[0_0_8px_rgba(168,85,247,0.25)]
